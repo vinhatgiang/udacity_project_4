@@ -60,10 +60,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: cd starter/backend && pip install pipenv && pipenv install
+        run: pip install pipenv && pipenv install
 
       - name: Run Tests
-        run: cd starter/backend && pipenv run test
+        run: pipenv run test
 
   build:
     name: Build
