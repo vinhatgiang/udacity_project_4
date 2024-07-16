@@ -59,7 +59,7 @@ jobs:
         run: cd starter/backend && pip install pipenv && pipenv install
 
       - name: Run Tests
-        run: cd starter/backend && pipenv run test
+        run: pipenv run test
  build:
     name: Build and Push Docker image to Amazon ECR
     runs-on: ubuntu-latest
