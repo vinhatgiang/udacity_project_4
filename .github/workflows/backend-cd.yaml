@@ -50,27 +50,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
-    steps:
-      - name: Checking Out the code from Repo
+       steps:
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Installing dependency manager pipenv
-        run: pip install pipenv
-
-      - name: Cache before dependency install
-        id: CachingData
-        uses: actions/cache@v3
+      - name: Set up Python environment
+        uses: actions/setup-python@v3
         with:
-          path: ~/.local/share/virtualenvs
-          key: deps-python-${{ hashFiles('**/Pipfile.lock') }}
+          python-version: '3.11'
 
-      - name: Installing dependencies
-        run: |
-          pipenv install --dev
-          pipenv install flake8
-  
-      - name: Now Running Tests
-        run: pipenv run test
+      - name: Install dependencies
+        run: cd starter/backend && pip install pipenv && pipenv install
+
+      - name: Run Tests
+        run: cd starter/backend && pipenv run test
 
   build:
     name: Build
