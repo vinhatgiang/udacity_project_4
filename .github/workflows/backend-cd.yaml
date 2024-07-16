@@ -64,7 +64,7 @@ jobs:
           path: ~/.local/share/virtualenvs
           key: deps-python-${{ hashFiles('**/Pipfile.lock') }}
 
-     - name: Install dependencies
+      - name: Install dependencies
         run: cd starter/backend && pip install pipenv && pipenv install
 
       - name: Run Tests
