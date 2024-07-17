@@ -81,7 +81,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: frontend
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           aws eks update-kubeconfig --name cluster
           export EXTERNALIP=$(kubectl get svc backend -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}{.status.loadBalancer.ingress[0].ip}')
@@ -93,9 +93,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/docker-cache
-          key: docker-latest-frontend
+          key: docker-${{ github.sha }}-frontend
           restore-keys: |
-            docker-latest-
+            docker-${{ github.sha }}-
 
   deploy:
     name: Deploy to Kubernetes
@@ -129,7 +129,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: frontend
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           kustomize edit set image frontend=$REGISTRY/$REPOSITORY:$IMAGE_TAG
         working-directory: ./starter/frontend/k8s

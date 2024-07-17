@@ -1,4 +1,4 @@
-name: Backend Continuous Deployment
+name: Continuous Deployment workflow for backend application
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   lint:
-    name: Backend Linting
+    name: backend lint job
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,40 +30,43 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          python-version: "3.11"
 
-      - name: Install pipenv
+      - name: pip install pipenv
         run: pip install pipenv
 
-      - name: Install dependencies
+      - name: pipenv install dependencies
         run: pipenv install
 
-      - name: Run lint
+      - name: run lint
         run: pipenv run lint
 
   test:
-    name: Backend Test
+    name: backend Test job
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./starter/backend
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python environment
-        uses: actions/setup-python@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install pipenv && pipenv install
+      - name: pip install pipenv
+        run: pip install pipenv
 
-      - name: Run Tests
+      - name: pipenv install dependencies
+        run: pipenv install
+
+      - name: run tests
         run: pipenv run test
-        
+
   build:
-    name: Build and Push Docker image
+    name: push docker image to aws ecr
     runs-on: ubuntu-latest
     needs: [lint, test]
     defaults:
@@ -73,18 +76,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Py
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          python-version: "3.11"
 
-      - name: Install pipenv
+      - name: pip install pipenv
         run: pip install pipenv
 
-      - name: Install dependencies
+      - name: pipenv install dependencies
         run: pipenv install
 
-      - name: Configure AWS Credentials
+      - name: configure-aws-credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -93,29 +96,25 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        with:
-          mask-password: "true"
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag, and Push docker image
+      - name: push docker image to aws ecr
         env:
+          IMAGE_TAG: ${{ github.sha }}
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: backend
-          IMAGE_TAG: latest
         run: |
-          echo "Registry: $REGISTRY"
-          echo "Repository: $REPOSITORY"
-          echo "Image Tag: $IMAGE_TAG"
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
-      - name: Cache Docker image
+      - name: cache docker image
         uses: actions/cache@v3
         with:
           path: ~/docker-cache
           key: docker-${{ github.sha }}-backend
           restore-keys: |
             docker-${{ github.sha }}-
+
   deploy:
     name: deloy eks
     runs-on: ubuntu-latest
@@ -146,7 +145,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: backend
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: kustomize edit set image backend=$REGISTRY/$REPOSITORY:$IMAGE_TAG
         working-directory: ./starter/backend/k8s
 
