@@ -51,7 +51,7 @@ jobs:
         run: npm install
 
       - name: Run testing
-        run:  npm test
+        run:  npm run test
 
   deploy:
     name: Build and Push Docker
