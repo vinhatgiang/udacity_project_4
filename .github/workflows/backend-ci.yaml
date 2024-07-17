@@ -59,7 +59,7 @@ jobs:
   
       - name: Now Running Tests
         run: pipenv run test
-build:
+  build:
     needs: [test, lint]
     runs-on: ubuntu-latest
     defaults:
