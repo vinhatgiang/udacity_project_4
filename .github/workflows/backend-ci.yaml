@@ -66,10 +66,10 @@ jobs:
     needs: [lint,test]
     defaults:
       run:
-        working-directory: backend
+        working-directory: ./starter/backend
     steps:
       - name: Checking out code
         uses: actions/checkout@v3
 
       - name: Build image
-        run: docker build ./starter/backend
+        run: docker build .
