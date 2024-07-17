@@ -1,5 +1,5 @@
 
-name: Continuous Deployment workflow for frontend application
+name: CD for frontend
 
 on:
   workflow_dispatch:
@@ -8,8 +8,6 @@ on:
       - main
     paths:
       - 'starter/frontend/**'
-env:
-  NODE_VERSION: 18.x
 
 jobs:
   lint:
@@ -37,7 +35,7 @@ jobs:
         run: npm run lint -- --fix
 
   test:
-    name: Frontend Testing
+    name: Test
     runs-on: ubuntu-latest
     defaults:
       run:

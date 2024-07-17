@@ -1,4 +1,4 @@
-name: Continuous Deployment workflow for backend application
+name: CD for backend
 
 on:
   workflow_dispatch:
