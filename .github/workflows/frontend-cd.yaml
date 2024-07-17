@@ -59,11 +59,10 @@ jobs:
         with:
           path: ~/.npm
           key: npm-${{ hashFiles('starter/frontend/package-lock.json') }}
-          restore-keys: |
-            npm-
+          restore-keys: npm-
 
       - name: Install dependencies
-        run: npm install
+        run: npm install react-scripts --save
 
       - name: Run testing
         run: npm run test
