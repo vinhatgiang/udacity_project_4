@@ -7,12 +7,10 @@ on:
       - main
     paths:
       - "starter/frontend/**"
-env:
-  NODE_VERSION: 18.x
 
 jobs:
   lint:
-    name: Frontend Linting
+    name: Lintin
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,7 +33,7 @@ jobs:
         run: npm run lint -- --fix
 
   test:
-    name: frontend test
+    name: Test
     runs-on: ubuntu-latest
     defaults:
       run:
