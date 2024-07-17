@@ -1,0 +1,127 @@
+name: Frontend Continuous Deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'starter/frontend/**'
+
+env:
+  REACT_APP_MOVIE_API_URL: http://localhost:5000
+  AWS_REGION: us-east-1
+  AWS_ECR_REPO: frontend
+  AWS_EKS_CLUSTER: cluster
+
+jobs:
+  lint:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: latest
+
+      - name: Restore cache
+        uses: ylemkimon/cache-restore@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json')}}
+          restore-keys: ${{ runner.os }}-node 
+
+      - name: Install dependencies
+        run: cd starter/frontend && npm ci
+
+      - name: Run linting
+        run: cd starter/frontend && npm run lint
+
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: latest
+
+      - name: Restore cache
+        uses: ylemkimon/cache-restore@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json')}}
+          restore-keys: ${{ runner.os }}-node 
+
+      - name: Install dependencies
+        run: cd starter/frontend && npm ci
+
+      - name: Run testing
+        run: cd starter/frontend && npm run test
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    needs: [test, lint]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: latest
+
+      - name: Restore cache
+        uses: ylemkimon/cache-restore@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json')}}
+          restore-keys: ${{ runner.os }}-node 
+
+      - name: Install dependencies
+        run: cd starter/frontend && npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker build and push
+        env:
+          AWS_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_VERSION: ${{ github.sha }}
+        run: |
+          docker build --build-arg REACT_APP_MOVIE_API_URL=$REACT_APP_MOVIE_API_URL -t $AWS_ECR_REGISTRY/$AWS_ECR_REPO:$IMAGE_VERSION ./starter/frontend
+          docker push $AWS_ECR_REGISTRY/$AWS_ECR_REPO:$IMAGE_VERSION
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name $AWS_EKS_CLUSTER
+
+      - name: Kubernetes deploy
+        env:
+          AWS_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_VERSION: ${{ github.sha }}
+        run: |
+          cd starter/frontend/k8s
+          kustomize edit set image frontend=$AWS_ECR_REGISTRY/$AWS_ECR_REPO:$IMAGE_VERSION
+          kustomize build | kubectl apply -f -
