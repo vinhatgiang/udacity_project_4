@@ -11,8 +11,8 @@ function MovieDetail({ movie }) {
 
   return (
     <div>
-      <h2>{details?.movie.title}</h2>
-      <p>{details?.movie.description}</p>
+      <h2>{details?.movie.title};</h2>
+      <p>{details?.movie.description};</p>
     </div>
   );
 }
