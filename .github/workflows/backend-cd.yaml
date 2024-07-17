@@ -146,7 +146,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: backend
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: latest
         run: kustomize edit set image backend=$REGISTRY/$REPOSITORY:$IMAGE_TAG
         working-directory: ./starter/backend/k8s
 
