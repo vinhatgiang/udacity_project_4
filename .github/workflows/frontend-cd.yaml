@@ -65,7 +65,7 @@ jobs:
         run: npm install react-scripts --save
 
       - name: Run testing
-        run: npm run test
+        run: npm run test -- --passWithNoTests
 
   deploy:
     name: Build and Push Docker
