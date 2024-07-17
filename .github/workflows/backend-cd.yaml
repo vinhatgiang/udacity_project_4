@@ -10,7 +10,7 @@ on:
 
 jobs:
   lint:
-    name: backend lint job
+    name: Lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -42,7 +42,7 @@ jobs:
         run: pipenv run lint
 
   test:
-    name: backend Test job
+    name: Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -66,7 +66,7 @@ jobs:
         run: pipenv run test
 
   build:
-    name: push docker image to aws ecr
+    name: Push docker image
     runs-on: ubuntu-latest
     needs: [lint, test]
     defaults:
@@ -107,7 +107,7 @@ jobs:
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
 
-      - name: cache docker image
+      - name: Cache docker
         uses: actions/cache@v3
         with:
           path: ~/docker-cache
@@ -116,7 +116,7 @@ jobs:
             docker-${{ github.sha }}-
 
   deploy:
-    name: deloy eks
+    name: Deploy
     runs-on: ubuntu-latest
     needs: [build]
     steps:
