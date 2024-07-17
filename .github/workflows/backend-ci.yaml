@@ -1,39 +1,17 @@
-name: Backend Continuous Integration
+
+name: Continuous Integration workflow for backend application
+
 on:
   workflow_dispatch:
   pull_request:
     branches:
       - main
+    paths:
+      - "starter/backend/**"
+
 jobs:
   lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./starter/backend
-    steps:
-      - name: Checking Out the code from Repo
-        uses: actions/checkout@v3
-
-      - name: Installing dependency manager pipenv
-        run: pip install pipenv
-
-      - name: Cache pipenv dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.local/share/virtualenvs
-          key: deps-python-${{ hashFiles('**/Pipfile.lock') }}
-        
-      - name: Installing dependencies
-        run: |
-          pipenv install --dev
-          pipenv install flake8
-          
-      - name: Now Running Lint
-        run: pipenv run lint
-
-  test:
-    name: Test
+    name: backend linr
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -42,43 +20,98 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Installing dependency
-        run: pip install pipenv
-
-      - name: Caching
-        id: CachingData
+      - name: Cache pipenv dependencies
         uses: actions/cache@v3
         with:
-          path: ~/.local/share/virtualenvs
-          key: deps-python-${{ hashFiles('**/Pipfile.lock') }}
+          path: ~/.cache/pipenv
+          key: pipenv-${{ runner.os }}-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            pipenv-${{ runner.os }}-
 
-      - name: Installing dependencies
-        run: |
-          pipenv install --dev
-          pipenv install flake8
-  
-      - name: Now Running Tests
-        run: pipenv run test
-  build:
-    needs: [test, lint]
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: pip install pipenv
+        run: pip install pipenv
+
+      - name: pipenv install dependencies
+        run: pipenv install
+
+      - name: Run lint
+        run: pipenv run lint
+
+  test:
+    name: backend test
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./starter/backend
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          python-version: "3.11"
 
-      - name: Install the dependencies
+      - name: pip install pipenv
+        run: pip install pipenv
+
+      - name: pipenv install dependencies
+        run: pipenv install
+
+      - name: Run tests
+        run: pipenv run test
+
+  build:
+    name: push docker image to aws ecr
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    defaults:
+      run:
+        working-directory: ./starter/backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: pip install pipenv
+        run: pip install pipenv
+
+      - name: pipenv install dependencies
+        run: pipenv install
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: push docker image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: backend
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          python -m pip install --upgrade pip
-          pip install pipenv && pipenv install
-          
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        
-      - name: Docker build
-        run: docker build -t backend .
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+          docker images
+
+      - name: Cache Docker image
+        uses: actions/cache@v3
+        with:
+          path: ~/docker-cache
+          key: docker-${{ github.sha }}-backend
+          restore-keys: |
+            docker-${{ github.sha }}-
