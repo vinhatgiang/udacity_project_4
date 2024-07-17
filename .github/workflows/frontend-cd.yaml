@@ -1,4 +1,5 @@
-name: Frontend Continuous Deployment
+
+name: Continuous Deployment workflow for frontend application
 
 on:
   workflow_dispatch:
@@ -49,7 +50,7 @@ jobs:
         run: npm install
 
       - name: Run tests
-        run: npm run test
+        run: npm test
 
   build:
     name: push docker image to aws ecr
@@ -80,7 +81,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: frontend
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: latest
         run: |
           aws eks update-kubeconfig --name cluster
           export EXTERNALIP=$(kubectl get svc backend -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}{.status.loadBalancer.ingress[0].ip}')
@@ -92,9 +93,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/docker-cache
-          key: docker-${{ github.sha }}-frontend
+          key: docker-latest-frontend
           restore-keys: |
-            docker-${{ github.sha }}-
+            docker-latest-
 
   deploy:
     name: Deploy to Kubernetes
@@ -128,7 +129,7 @@ jobs:
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: frontend
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: latest
         run: |
           kustomize edit set image frontend=$REGISTRY/$REPOSITORY:$IMAGE_TAG
         working-directory: ./starter/frontend/k8s
